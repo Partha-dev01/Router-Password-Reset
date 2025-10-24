@@ -1,0 +1,112 @@
+{
+  "Jio Centrum Home Gateway": {
+    "url": "http://192.168.29.1",
+    "username_field": "[name='users.username']",
+    "password_field": "[name='users.password']",
+    "login_button": "[name='button.login.users.dashboard']",
+    "failure_message": "Invalid username or password",
+    "lockout_message": "Access denied, maximum login attempts reached",
+    "lockout_timeout": 600,
+    "success_indicators": ["Dashboard", "Settings", "Status", "Management"]
+  },
+  "TP-Link Archer BE550": {
+    "url": "http://tplinkwifi.net",
+    "username_field": "[name='username']",
+    "password_field": "[name='password']",
+    "login_button": "[name='login']",
+    "failure_message": "Invalid username or password",
+    "lockout_message": "Access denied",
+    "lockout_timeout": 7200,
+    "success_indicators": ["Dashboard", "Settings"]
+  },
+  "Asus RT-BE58U": {
+    "url": "http://router.asus.com",
+    "username_field": "#uid",
+    "password_field": "#pwd",
+    "login_button": "#loginBtn",
+    "failure_message": "Login failed",
+    "lockout_message": "Too many attempts",
+    "lockout_timeout": 300,
+    "success_indicators": ["Wireless", "Administration"]
+  },
+  "TP-Link Archer AXE75": {
+    "url": "http://tplinkwifi.net",
+    "username_field": "[name='username']",
+    "password_field": "[name='password']",
+    "login_button": "[name='login']",
+    "failure_message": "Invalid username or password",
+    "lockout_message": "Access denied",
+    "lockout_timeout": 7200,
+    "success_indicators": ["Dashboard", "Settings"]
+  },
+  "Netgear Nighthawk RAXE500": {
+    "url": "http://routerlogin.net",
+    "username_field": "[name='userName']",
+    "password_field": "[name='pwd']",
+    "login_button": "[name='login']",
+    "failure_message": "Invalid user name or password",
+    "lockout_message": "Too many attempts",
+    "lockout_timeout": 1800,
+    "success_indicators": ["BASIC", "ADVANCED"]
+  },
+  "Linksys Velop MX5300": {
+    "url": "http://myrouter.local",
+    "username_field": "[name='login']",
+    "password_field": "[name='password']",
+    "login_button": "[name='submit']",
+    "failure_message": "Invalid credentials",
+    "lockout_message": "N/A",
+    "lockout_timeout": 0,
+    "success_indicators": ["Dashboard", "Connectivity"]
+  },
+  "Amazon Eero Pro 6E": {
+    "url": "192.168.4.1",
+    "username_field": "N/A",
+    "password_field": "N/A",
+    "login_button": "N/A",
+    "failure_message": "N/A",
+    "lockout_message": "App lockout",
+    "lockout_timeout": 1800,
+    "success_indicators": ["Network", "Devices"]
+  },
+  "Google Nest Wifi Pro": {
+    "url": "192.168.86.1",
+    "username_field": "N/A",
+    "password_field": "N/A",
+    "login_button": "N/A",
+    "failure_message": "N/A",
+    "lockout_message": "App lockout",
+    "lockout_timeout": 900,
+    "success_indicators": ["Settings", "Network"]
+  },
+  "Netgear Orbi RBKE963": {
+    "url": "http://orbilogin.com",
+    "username_field": "[name='userName']",
+    "password_field": "[name='pwd']",
+    "login_button": "[name='login']",
+    "failure_message": "Invalid user name or password",
+    "lockout_message": "Too many attempts",
+    "lockout_timeout": 1800,
+    "success_indicators": ["BASIC", "ADVANCED"]
+  },
+  "TP-Link Deco BE85": {
+    "url": "http://tplinkdeco.net",
+    "username_field": "[name='username']",
+    "password_field": "[name='password']",
+    "login_button": "[name='login']",
+    "failure_message": "Invalid credentials",
+    "lockout_message": "Access denied",
+    "lockout_timeout": 7200,
+    "success_indicators": ["Dashboard", "Network"]
+  },
+  "Synology RT6600ax": {
+    "url": "http://192.168.1.1:8000",
+    "username_field": "[name='user']",
+    "password_field": "[name='pass']",
+    "login_button": "[name='login']",
+    "failure_message": "Invalid login",
+    "lockout_message": "Too many attempts",
+    "lockout_timeout": 600,
+    "success_indicators": ["SRM", "Network Center"]
+  }
+}

